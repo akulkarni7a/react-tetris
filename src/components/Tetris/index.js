@@ -5,10 +5,17 @@ import Game from "../Game";
 
 const Tetris = () => {
 	const [runing, setRuning] = useState(false);
+	const [bombMode, setBombMode] = useState(false);
+
+	const startGame = (isBombMode) => {
+		setBombMode(isBombMode);
+		setRuning(true);
+	};
+
 	return runing ? (
-		<Game stopClick={() => setRuning(false)} />
+		<Game stopClick={() => setRuning(false)} bombMode={bombMode} />
 	) : (
-		<StartPage startClick={() => setRuning(true)} />
+		<StartPage startClick={startGame} />
 	);
 };
 
