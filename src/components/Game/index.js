@@ -204,7 +204,7 @@ const Game = ({ bombMode, stopClick }) => {
 
 			if (bombMode) {
 				const newBombCounter = bombCounter + 1;
-				if (newBombCounter >= 5) {
+				if (newBombCounter >= 2) {
 					setBombCounter(0);
 
 					const emptyCells = [];
