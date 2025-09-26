@@ -6,19 +6,18 @@ const StyledStartPage = styled.div`
 	height: 100vh;
 	overflow: hidden;
 	background-color: #e3b505;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
 `;
 
-const StartButton = styled.button`
+const Button = styled.button`
 	font-size: 2.2em;
 	font-family: "ZCOOL QingKe HuangYou", cursive;
-	/* border: 2px solid #222; */
 	border: none;
 	padding: 30px 100px;
 	background-color: #fff;
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
 	vertical-align: middle;
 	text-decoration: none;
 	transition: all 0.5s;
@@ -26,26 +25,28 @@ const StartButton = styled.button`
 	border-right: 1px solid #eee;
 	border-radius: 2px;
 	border-bottom: 1px solid #ccc;
+	margin: 20px;
+	position: relative;
 
 	:focus {
 		outline: 0;
 	}
 
 	:hover {
-		margin-left: 5px;
-		margin-top: 5px;
-		::after {
+		margin-left: 25px;
+		margin-top: 25px;
+		&::after {
 			right: -5px;
 			top: 2px;
 			width: 5px;
 		}
-		::before {
+		&::before {
 			right: -3px;
 			height: 5px;
 		}
 	}
 
-	::after {
+	&::after {
 		content: "";
 		height: 100%;
 		width: 10px;
@@ -57,23 +58,33 @@ const StartButton = styled.button`
 		transition: all 0.5s;
 	}
 
-	::before {
+	&::before {
 		content: "";
 		height: 10px;
 		width: 100%;
 		background-color: #ccc;
 		right: -5px;
-		top: 95px;
+		bottom: -10px;
 		transform: skewX(45deg);
 		position: absolute;
 		transition: all 0.5s;
 	}
 `;
 
-const StartPage = ({ startClick }) => {
+const StartButton = styled(Button)``;
+
+const BombModeButton = styled(Button)`
+	background-color: ${props => (props.bombMode ? "#95190c" : "#fff")};
+	color: ${props => (props.bombMode ? "#fff" : "#95190c")};
+`;
+
+const StartPage = ({ startClick, bombMode, toggleBombMode }) => {
 	return (
 		<StyledStartPage>
 			<StartButton onClick={startClick}>Start</StartButton>
+			<BombModeButton onClick={toggleBombMode} bombMode={bombMode}>
+				Bomb Mode: {bombMode ? "ON" : "OFF"}
+			</BombModeButton>
 		</StyledStartPage>
 	);
 };
