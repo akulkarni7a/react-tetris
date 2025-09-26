@@ -100,8 +100,29 @@ const getRandomPlayer = player => {
 	return { pos, bloco, next };
 };
 
+const createMapWithInitialBombs = () => {
+	const newMap = [...new Array(STAGE_HEIGHT)].map(() =>
+		[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [] }))
+	);
+	const numberOfBombs = 3;
+	for (let i = 0; i < numberOfBombs; i++) {
+		let x, y;
+		do {
+			x = Math.floor(Math.random() * STAGE_WIDTH);
+			y =
+				Math.floor(Math.random() * (STAGE_HEIGHT / 2)) +
+				Math.floor(STAGE_HEIGHT / 2);
+		} while (newMap[y][x].fill === 1);
+
+		newMap[y][x] = { fill: 1, isBomb: true, color: "red" };
+	}
+	return newMap;
+};
+
 const Game = ({ bombMode, stopClick }) => {
-	const [map, setMap] = useState(initialMap);
+	const [map, setMap] = useState(() =>
+		bombMode ? createMapWithInitialBombs() : initialMap
+	);
 	const [player, setPlayer] = useState();
 	const [down, setDown] = useState(false);
 	const [pause, setPause] = useState(false);
@@ -157,7 +178,7 @@ const Game = ({ bombMode, stopClick }) => {
 	}, [level, score]);
 
 	const restartGame = () => {
-		setMap(initialMap);
+		setMap(bombMode ? createMapWithInitialBombs() : initialMap);
 		setlines(0);
 		setScore(0);
 		setLevel(1);
@@ -219,7 +240,7 @@ const Game = ({ bombMode, stopClick }) => {
 					if (emptyCells.length > 0) {
 						const randomIndex = Math.floor(Math.random() * emptyCells.length);
 						const { x, y } = emptyCells[randomIndex];
-						mapWithPlayer[y][x] = { fill: 1, isBomb: true, color: "black" };
+						mapWithPlayer[y][x] = { fill: 1, isBomb: true, color: "red" };
 					}
 				} else {
 					setBombCounter(newBombCounter);
