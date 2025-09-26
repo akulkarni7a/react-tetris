@@ -15,9 +15,25 @@ import { PrintPlayerInMap } from "../../utils/Utils";
 const STAGE_HEIGHT = 18;
 const STAGE_WIDTH = 10;
 
-const initialMap = [...new Array(STAGE_HEIGHT)].map(() =>
-	[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [] }))
-);
+const createInitialMap = bombMode => {
+	const map = [...new Array(STAGE_HEIGHT)].map(() =>
+		[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [] }))
+	);
+
+	if (bombMode) {
+		let bombs = 0;
+		while (bombs < 3) {
+			const y = Math.floor(Math.random() * STAGE_HEIGHT);
+			const x = Math.floor(Math.random() * STAGE_WIDTH);
+			if (y > 4 && map[y][x].fill === 0) {
+				map[y][x] = { fill: 1, color: "red", isBomb: true };
+				bombs++;
+			}
+		}
+	}
+
+	return map;
+};
 
 const colors = [
 	"#e54b4b",
@@ -104,8 +120,8 @@ const getRandomPlayer = player => {
 	return { pos, bloco, next };
 };
 
-const Game = () => {
-	const [map, setMap] = useState(initialMap);
+const Game = ({ bombMode, stopClick }) => {
+	const [map, setMap] = useState(createInitialMap(bombMode));
 	const [player, setPlayer] = useState();
 	const [down, setDown] = useState(false);
 	const [pause, setPause] = useState(false);
@@ -131,16 +147,16 @@ const Game = () => {
 	}, [level, score]);
 
 	const restartGame = () => {
-		setMap(initialMap); //TODO: lose game
+		setMap(createInitialMap(bombMode));
 		setlines(0);
 		setScore(0);
 		setLevel(1);
 		setGameOver(false);
-	}
-
-	const loseGame = () => {
-		setGameOver(true);
 	};
+
+	const loseGame = React.useCallback(() => {
+		setGameOver(true);
+	}, []);
 
 	const drop = () => {
 		if (!player) {
@@ -264,7 +280,7 @@ const Game = () => {
 	);
 
 	const validatePosition = React.useCallback(
-		(pos, bloco) => {
+		(pos, bloco, options = { triggerGameOver: true }) => {
 			for (let y = 0; y < bloco.bloco.length; y++)
 				for (let x = 0; x < bloco.bloco[y].length; x++)
 					if (bloco.bloco[y][x] === 1) {
@@ -275,21 +291,30 @@ const Game = () => {
 							mapX < 0 ||
 							mapX > STAGE_WIDTH ||
 							!map[mapY] ||
-							!map[mapY][mapX] ||
-							map[mapY][mapX].fill === 1
+							!map[mapY][mapX]
 						)
 							return false;
+						if (map[mapY][mapX].fill === 1) {
+							if (map[mapY][mapX].isBomb && options.triggerGameOver) {
+								loseGame();
+							}
+							return false;
+						}
 					}
 			return true;
 		},
-		[map]
+		[map, loseGame]
 	);
 
 	const calculateHintPlayer = React.useCallback(
 		player => {
 			const hintBloco = JSON.parse(JSON.stringify(player.bloco));
 			let hintPosition = [...player.pos];
-			while (validatePosition([hintPosition[0] + 1, hintPosition[1]], hintBloco))
+			while (
+				validatePosition([hintPosition[0] + 1, hintPosition[1]], hintBloco, {
+					triggerGameOver: false
+				})
+			)
 				hintPosition = [hintPosition[0] + 1, hintPosition[1]];
 			return { pos: hintPosition, bloco: hintBloco };
 		},
