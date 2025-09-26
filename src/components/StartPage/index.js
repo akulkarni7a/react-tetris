@@ -70,10 +70,24 @@ const StartButton = styled.button`
 	}
 `;
 
+const ButtonContainer = styled.div`
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+`;
+
 const StartPage = ({ startClick }) => {
 	return (
 		<StyledStartPage>
-			<StartButton onClick={startClick}>Start</StartButton>
+			<ButtonContainer>
+				<StartButton onClick={() => startClick(false)}>Start</StartButton>
+				<StartButton onClick={() => startClick(true)} style={{marginTop: '20px'}}>Bomb Mode</StartButton>
+			</ButtonContainer>
 		</StyledStartPage>
 	);
 };

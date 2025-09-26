@@ -265,7 +265,7 @@ const Stage = ({ lose, restartClick, map, player, hint, status, paused, ...other
 					</ContainerNext>
 				)}
 				{map && (
-					<StyledStage ref={stageRef} {...others} theme3d={theme3d} pixelSize={pixelSize}>
+					<StyledStage data-testid="game-stage" ref={stageRef} {...others} theme3d={theme3d} pixelSize={pixelSize}>
 						{map.map((row, y) => (
 							<Row stage="true" pixelSize={pixelSize} key={`row-${y}`}>
 								{row.map((pixel, x) => {
@@ -283,6 +283,7 @@ const Stage = ({ lose, restartClick, map, player, hint, status, paused, ...other
 									let zIndex = !playerFill && !pixel.fill && playerHint ? 99 : y;
 									return (
 										<Pixel
+											data-testid={pixel.isBomb ? 'bomb-cell' : null}
 											paused={paused}
 											theme3d={theme3d}
 											hint={!pixel.fill && !playerFill && playerHint}

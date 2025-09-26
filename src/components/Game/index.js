@@ -104,8 +104,20 @@ const getRandomPlayer = player => {
 	return { pos, bloco, next };
 };
 
-const Game = () => {
-	const [map, setMap] = useState(initialMap);
+const getInitialMapWithBombs = () => {
+	const newMap = [...new Array(STAGE_HEIGHT)].map(() =>
+		[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [] }))
+	);
+	for (let i = 0; i < 3; i++) {
+		const bombY = Math.floor(Math.random() * STAGE_HEIGHT);
+		const bombX = Math.floor(Math.random() * STAGE_WIDTH);
+		newMap[bombY][bombX] = { fill: 1, color: "red", isBomb: true };
+	}
+	return newMap;
+};
+
+const Game = ({ bombMode }) => {
+	const [map, setMap] = useState(bombMode ? getInitialMapWithBombs() : initialMap);
 	const [player, setPlayer] = useState();
 	const [down, setDown] = useState(false);
 	const [pause, setPause] = useState(false);
@@ -131,16 +143,16 @@ const Game = () => {
 	}, [level, score]);
 
 	const restartGame = () => {
-		setMap(initialMap); //TODO: lose game
+		setMap(bombMode ? getInitialMapWithBombs() : initialMap);
 		setlines(0);
 		setScore(0);
 		setLevel(1);
 		setGameOver(false);
 	}
 
-	const loseGame = () => {
+	const loseGame = React.useCallback(() => {
 		setGameOver(true);
-	};
+	}, []);
 
 	const drop = () => {
 		if (!player) {
@@ -277,12 +289,16 @@ const Game = () => {
 							!map[mapY] ||
 							!map[mapY][mapX] ||
 							map[mapY][mapX].fill === 1
-						)
+						) {
+							if (map[mapY] && map[mapY][mapX] && map[mapY][mapX].isBomb) {
+								loseGame();
+							}
 							return false;
+						}
 					}
 			return true;
 		},
-		[map]
+		[map, loseGame]
 	);
 
 	const calculateHintPlayer = React.useCallback(
