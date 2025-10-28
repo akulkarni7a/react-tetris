@@ -8,6 +8,16 @@ const StyledStartPage = styled.div`
 	background-color: #e3b505;
 `;
 
+const ButtonWrapper = styled.div`
+	position: absolute;
+	top: 50%;
+	left: 50%;
+	transform: translate(-50%, -50%);
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+`;
+
 const StartButton = styled.button`
 	font-size: 2.2em;
 	font-family: "ZCOOL QingKe HuangYou", cursive;
@@ -15,10 +25,6 @@ const StartButton = styled.button`
 	border: none;
 	padding: 30px 100px;
 	background-color: #fff;
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	transform: translate(-50%, -50%);
 	vertical-align: middle;
 	text-decoration: none;
 	transition: all 0.5s;
@@ -26,6 +32,8 @@ const StartButton = styled.button`
 	border-right: 1px solid #eee;
 	border-radius: 2px;
 	border-bottom: 1px solid #ccc;
+	position: relative;
+	margin-bottom: 40px;
 
 	:focus {
 		outline: 0;
@@ -70,10 +78,25 @@ const StartButton = styled.button`
 	}
 `;
 
-const StartPage = ({ startClick }) => {
+const BombModeButton = styled(StartButton)`
+	font-size: 1.5em;
+	padding: 20px 50px;
+	margin-bottom: 0;
+
+	::before {
+		top: 75px;
+	}
+`;
+
+const StartPage = ({ startClick, bombMode, toggleBombMode }) => {
 	return (
 		<StyledStartPage>
-			<StartButton onClick={startClick}>Start</StartButton>
+			<ButtonWrapper>
+				<StartButton onClick={startClick}>Start</StartButton>
+				<BombModeButton onClick={toggleBombMode}>
+					Bomb Mode: {bombMode ? "On" : "Off"}
+				</BombModeButton>
+			</ButtonWrapper>
 		</StyledStartPage>
 	);
 };

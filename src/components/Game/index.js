@@ -8,10 +8,6 @@ import Center from "../Center";
 
 import { PrintPlayerInMap } from "../../utils/Utils";
 
-//TODO: Alterar OnClick (rotatePlayer) para OnFastClick (criar hook)
-//TODO: Organização do componente "Game" (Separar codigo em hooks, outros components e funcoes)
-//TODO: Dar um tempo quando o bloco estiver no chão, mas o usuário mexendo
-
 const STAGE_HEIGHT = 18;
 const STAGE_WIDTH = 10;
 
@@ -104,8 +100,29 @@ const getRandomPlayer = player => {
 	return { pos, bloco, next };
 };
 
-const Game = () => {
-	const [map, setMap] = useState(initialMap);
+const createMapWithInitialBombs = () => {
+	const newMap = [...new Array(STAGE_HEIGHT)].map(() =>
+		[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [] }))
+	);
+	const numberOfBombs = 3;
+	for (let i = 0; i < numberOfBombs; i++) {
+		let x, y;
+		do {
+			x = Math.floor(Math.random() * STAGE_WIDTH);
+			y =
+				Math.floor(Math.random() * (STAGE_HEIGHT / 2)) +
+				Math.floor(STAGE_HEIGHT / 2);
+		} while (newMap[y][x].fill === 1);
+
+		newMap[y][x] = { fill: 1, isBomb: true, color: "red" };
+	}
+	return newMap;
+};
+
+const Game = ({ bombMode, stopClick }) => {
+	const [map, setMap] = useState(() =>
+		bombMode ? createMapWithInitialBombs() : initialMap
+	);
 	const [player, setPlayer] = useState();
 	const [down, setDown] = useState(false);
 	const [pause, setPause] = useState(false);
@@ -118,116 +135,55 @@ const Game = () => {
 	const [dragX, setDragX] = useState(0);
 	const [dragY, setDragY] = useState(0);
 	const [gameOver, setGameOver] = useState(false);
+	const [bombCounter, setBombCounter] = useState(0);
+
+	const loseGame = React.useCallback(() => {
+		setGameOver(true);
+	}, []);
+
+	const validatePosition = React.useCallback(
+		(pos, bloco) => {
+			for (let y = 0; y < bloco.bloco.length; y++)
+				for (let x = 0; x < bloco.bloco[y].length; x++)
+					if (bloco.bloco[y][x] === 1) {
+						let mapY = pos[0] + y;
+						let mapX = pos[1] + x;
+						if (
+							mapY >= STAGE_HEIGHT ||
+							mapX < 0 ||
+							mapX >= STAGE_WIDTH ||
+							!map[mapY] ||
+							!map[mapY][mapX]
+						) {
+							return false;
+						}
+						if (map[mapY][mapX].fill === 1) {
+							if (bombMode && map[mapY][mapX].isBomb) {
+								loseGame();
+							}
+							return false;
+						}
+					}
+			return true;
+		},
+		[map, bombMode, loseGame]
+	);
 
 	useEffect(() => {
 		const levelBaseScore = 1000;
 		const nextLevel = level + 1;
 		const nextLevelScore =
 			(levelBaseScore * nextLevel * nextLevel * nextLevel) / 5;
-		console.log("Current level: ", level);
-		console.log("Score to next level:", nextLevelScore);
-		console.log("Remaining: ", nextLevelScore - score);
 		if (score >= nextLevelScore) setLevel(level + 1);
 	}, [level, score]);
 
 	const restartGame = () => {
-		setMap(initialMap); //TODO: lose game
+		setMap(bombMode ? createMapWithInitialBombs() : initialMap);
 		setlines(0);
 		setScore(0);
 		setLevel(1);
 		setGameOver(false);
-	}
-
-	const loseGame = () => {
-		setGameOver(true);
-	};
-
-	const drop = () => {
-		if (!player) {
-			setPlayer(getRandomPlayer());
-			return;
-		}
-		setPlayer(player => {
-			const newPos = getNewPlayerPos("down");
-			if (player.pos === newPos) {
-				setMap(map => {
-					const mapWithPlayer = PrintPlayerInMap(player, map);
-					const mapCleared = checkMap(mapWithPlayer);
-					return mapCleared;
-				});
-				const newPlayer = getRandomPlayer(player);
-				if (!validatePosition(newPlayer.pos, newPlayer.bloco)) loseGame();
-				return newPlayer;
-			}
-			return { ...player, pos: newPos };
-		});
-	};
-
-	const rotatePlayer = () => {
-		const clonedPlayer = JSON.parse(JSON.stringify(player));
-		let mtrx = clonedPlayer.bloco.bloco.map((_, index) =>
-			clonedPlayer.bloco.bloco.map(column => column[index])
-		);
-		mtrx = mtrx.map(row => row.reverse());
-		if (validatePosition(player.pos, { bloco: mtrx }))
-			setPlayer({ ...player, bloco: { ...player.bloco, bloco: mtrx } });
-	};
-
-	const keyUp = ({ keyCode }) => {
-		if (pause || gameOver)
-			return;
-		const THRESHOLD = 80;
-		// Activate the interval again when user releases down arrow.
-		if (keyCode === 40) {
-			setDown(false);
-			if (Date.now() - tick <= THRESHOLD) drop();
-		}
-		if (keyCode === 32) setSpaceReleased(true);
-	};
-
-	const forwardDown = () => {
-		if (pause || gameOver)
-			return;
-		setPlayer(player => {
-			const playerCopy = JSON.parse(JSON.stringify(player));
-			playerCopy.pos = [...hintPlayer.pos];
-			setMap(map => {
-				const mapWithPlayer = PrintPlayerInMap(playerCopy, map);
-				const mapCleared = checkMap(mapWithPlayer);
-				return mapCleared;
-			});
-			const newPlayer = getRandomPlayer(player);
-			if (!validatePosition(newPlayer.pos, newPlayer.bloco)) loseGame();
-			return newPlayer;
-		});
-	};
-
-	const keyDown = ({ keyCode }) => {
-		if (pause || gameOver)
-			return;
-		switch (keyCode) {
-			case 37:
-				setPlayer(player => ({ ...player, pos: getNewPlayerPos("left") }));
-				break;
-			case 38:
-				rotatePlayer();
-				break;
-			case 39:
-				setPlayer(player => ({ ...player, pos: getNewPlayerPos("right") }));
-				break;
-			case 40:
-				setTick(Date.now());
-				setDown(true);
-				break;
-			case 32:
-				if (spaceReleased) {
-					setSpaceReleased(false);
-					forwardDown();
-				}
-				break;
-			default:
-				break;
-		}
+		setBombCounter(0);
 	};
 
 	const checkMap = React.useCallback(
@@ -263,37 +219,38 @@ const Game = () => {
 		[level]
 	);
 
-	const validatePosition = React.useCallback(
-		(pos, bloco) => {
-			for (let y = 0; y < bloco.bloco.length; y++)
-				for (let x = 0; x < bloco.bloco[y].length; x++)
-					if (bloco.bloco[y][x] === 1) {
-						let mapY = pos[0] + y;
-						let mapX = pos[1] + x;
-						if (
-							mapY > STAGE_HEIGHT ||
-							mapX < 0 ||
-							mapX > STAGE_WIDTH ||
-							!map[mapY] ||
-							!map[mapY][mapX] ||
-							map[mapY][mapX].fill === 1
-						)
-							return false;
-					}
-			return true;
-		},
-		[map]
-	);
+	const handlePiecePlaced = React.useCallback(
+		(currentMap, player) => {
+			let mapWithPlayer = PrintPlayerInMap(player, currentMap);
 
-	const calculateHintPlayer = React.useCallback(
-		player => {
-			const hintBloco = JSON.parse(JSON.stringify(player.bloco));
-			let hintPosition = [...player.pos];
-			while (validatePosition([hintPosition[0] + 1, hintPosition[1]], hintBloco))
-				hintPosition = [hintPosition[0] + 1, hintPosition[1]];
-			return { pos: hintPosition, bloco: hintBloco };
+			if (bombMode) {
+				const newBombCounter = bombCounter + 1;
+				if (newBombCounter >= 2) {
+					setBombCounter(0);
+
+					const emptyCells = [];
+					mapWithPlayer.forEach((row, y) => {
+						row.forEach((cell, x) => {
+							if (cell.fill === 0 && y > 2) {
+								emptyCells.push({ x, y });
+							}
+						});
+					});
+
+					if (emptyCells.length > 0) {
+						const randomIndex = Math.floor(Math.random() * emptyCells.length);
+						const { x, y } = emptyCells[randomIndex];
+						mapWithPlayer[y][x] = { fill: 1, isBomb: true, color: "red" };
+					}
+				} else {
+					setBombCounter(newBombCounter);
+				}
+			}
+
+			const mapCleared = checkMap(mapWithPlayer);
+			return mapCleared;
 		},
-		[validatePosition]
+		[bombCounter, bombMode, checkMap]
 	);
 
 	const getNewPlayerPos = React.useCallback(
@@ -309,11 +266,100 @@ const Game = () => {
 		[player, validatePosition]
 	);
 
+	const drop = () => {
+		if (!player) {
+			setPlayer(getRandomPlayer());
+			return;
+		}
+		setPlayer(player => {
+			const newPos = getNewPlayerPos("down");
+			if (player.pos === newPos) {
+				setMap(map => handlePiecePlaced(map, player));
+				const newPlayer = getRandomPlayer(player);
+				if (!validatePosition(newPlayer.pos, newPlayer.bloco)) loseGame();
+				return newPlayer;
+			}
+			return { ...player, pos: newPos };
+		});
+	};
+
+	const rotatePlayer = () => {
+		if (!player) return;
+		const clonedPlayer = JSON.parse(JSON.stringify(player));
+		let mtrx = clonedPlayer.bloco.bloco.map((_, index) =>
+			clonedPlayer.bloco.bloco.map(column => column[index])
+		);
+		mtrx = mtrx.map(row => row.reverse());
+		if (validatePosition(player.pos, { bloco: mtrx }))
+			setPlayer({ ...player, bloco: { ...player.bloco, bloco: mtrx } });
+	};
+
+	const keyUp = ({ keyCode }) => {
+		if (pause || gameOver) return;
+		const THRESHOLD = 80;
+		if (keyCode === 40) {
+			setDown(false);
+			if (Date.now() - tick <= THRESHOLD) drop();
+		}
+		if (keyCode === 32) setSpaceReleased(true);
+	};
+
+	const forwardDown = () => {
+		if (pause || gameOver || !player) return;
+		setPlayer(player => {
+			const playerCopy = JSON.parse(JSON.stringify(player));
+			playerCopy.pos = [...hintPlayer.pos];
+			setMap(map => handlePiecePlaced(map, playerCopy));
+			const newPlayer = getRandomPlayer(player);
+			if (!validatePosition(newPlayer.pos, newPlayer.bloco)) loseGame();
+			return newPlayer;
+		});
+	};
+
+	const keyDown = ({ keyCode }) => {
+		if (pause || gameOver) return;
+		switch (keyCode) {
+			case 37:
+				setPlayer(player => ({ ...player, pos: getNewPlayerPos("left") }));
+				break;
+			case 38:
+				rotatePlayer();
+				break;
+			case 39:
+				setPlayer(player => ({ ...player, pos: getNewPlayerPos("right") }));
+				break;
+			case 40:
+				setTick(Date.now());
+				setDown(true);
+				break;
+			case 32:
+				if (spaceReleased) {
+					setSpaceReleased(false);
+					forwardDown();
+				}
+				break;
+			default:
+				break;
+		}
+	};
+
+	const calculateHintPlayer = React.useCallback(
+		player => {
+			if (!player) return null;
+			const hintBloco = JSON.parse(JSON.stringify(player.bloco));
+			let hintPosition = [...player.pos];
+			while (validatePosition([hintPosition[0] + 1, hintPosition[1]], hintBloco))
+				hintPosition = [hintPosition[0] + 1, hintPosition[1]];
+			return { pos: hintPosition, bloco: hintBloco };
+		},
+		[validatePosition]
+	);
+
 	useInterval(
 		() => {
 			drop();
 		},
-		(pause || gameOver) ? null : down ? 50 : 450 - (level - 1) * 20
+		pause || gameOver ? null : down ? 50 : 450 - (level - 1) * 20
 	);
 
 	useEffect(() => {
@@ -322,9 +368,14 @@ const Game = () => {
 	}, [player, calculateHintPlayer]);
 
 	const bind = useDrag(
-		({ down, movement: [mx, my], velocity }) => {
+		({ down, movement: [mx, my], velocity, tap }) => {
 			const THRESHOLD = 20;
 			const FORCE_THRESHOLD = 1;
+
+			if (tap) {
+				rotatePlayer();
+			}
+
 			if (down) {
 				if (Math.abs(mx - dragX) > THRESHOLD) {
 					if (mx - dragX > 0)
@@ -370,7 +421,6 @@ const Game = () => {
 			tabIndex="0"
 			onKeyUp={keyUp}
 			onKeyDown={keyDown}
-			onClick={() => rotatePlayer()}
 			{...bind()}
 		/>
 	);
