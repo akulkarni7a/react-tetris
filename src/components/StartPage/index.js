@@ -1,11 +1,14 @@
 import React from "react";
 import styled from "styled-components";
+import background from "../../images/beach_background.jpg";
 
 const StyledStartPage = styled.div`
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
-	background-color: #e3b505;
+	background-image: url(${background});
+	background-size: cover;
+	background-position: center;
 `;
 
 const StartButton = styled.button`

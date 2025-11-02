@@ -3,6 +3,7 @@ import styled from "styled-components";
 import Switch from "react-switch";
 
 import useWindowDimensions from "../../hooks/useWindowDimensions";
+import background from "../../images/beach_background.jpg";
 import StatusRow from "../StatusRow";
 import LoseGame from '../LoseGame';
 
@@ -15,7 +16,7 @@ const Game = styled.div`
 	flex-direction: ${props => (props.portrait ? "column" : "row")};
 	justify-content: center;
 	align-items: center;
-	background-image: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmVhY2glMjBiYWNrZ3JvdW5kfGVufDB8fDB8fHww&fm=jpg&q=60&w=3000");
+	background-image: url(${background});
 	background-size: cover;
 	background-position: center;
 `;
@@ -95,7 +96,7 @@ const Pixel = React.memo(styled.div`
 			props.topBloco
 				? `, 0 ${-props.pixelSize / 4.16}px 0 ${Color(props.color).lighten(0.2)}`
 				: ""
-		} 
+		}
 	`};
 
 	${props =>
@@ -106,7 +107,7 @@ const Pixel = React.memo(styled.div`
 		};
 		border-top: 1px solid ${
 			props.stage || props.fill || props.hint ? "#222" : "black"
-		};	
+		};
 	`};
 
 	${props =>
@@ -332,7 +333,7 @@ const Stage = ({ lose, restartClick, map, player, hint, status, paused, ...other
 					</ContainerStatus>
 				)}
 			</Game>
-			{ lose && 
+			{ lose &&
 				<LoseGame portrait={portrait} restartClick={restartClick} status={status} pixelSize={pixelSize} theme3d={theme3d}>
 				</LoseGame>}
 		</div>
