@@ -3,7 +3,6 @@ import styled from "styled-components";
 import Switch from "react-switch";
 
 import useWindowDimensions from "../../hooks/useWindowDimensions";
-import background from "../../images/background.jpg";
 import StatusRow from "../StatusRow";
 import LoseGame from '../LoseGame';
 
@@ -16,7 +15,7 @@ const Game = styled.div`
 	flex-direction: ${props => (props.portrait ? "column" : "row")};
 	justify-content: center;
 	align-items: center;
-	background-image: url(${background});
+	background-image: url("https://images.unsplash.com/photo-1507525428034-b723cf961d3e?ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8YmVhY2glMjBiYWNrZ3JvdW5kfGVufDB8fDB8fHww&fm=jpg&q=60&w=3000");
 	background-size: cover;
 	background-position: center;
 `;
