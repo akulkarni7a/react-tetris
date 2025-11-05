@@ -16,8 +16,36 @@ const STAGE_HEIGHT = 18;
 const STAGE_WIDTH = 10;
 
 const initialMap = [...new Array(STAGE_HEIGHT)].map(() =>
-	[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [] }))
+	[...new Array(STAGE_WIDTH)].map(() => ({ fill: 0, color: [], isBomb: false }))
 );
+
+const BOMB_COLOR = "#FF4500"; // Orange-red color for bombs
+
+const generateBombs = (map, count = 5) => {
+	const newMap = map.map(arr => arr.map(cell => ({ ...cell })));
+	const placedBombs = 0;
+	const minRow = Math.floor(STAGE_HEIGHT / 3); // Place bombs in bottom 2/3 of board
+
+	for (let i = 0; i < count; i++) {
+		let attempts = 0;
+		let placed = false;
+
+		// Try to place bomb in a random position
+		while (!placed && attempts < 50) {
+			const row = minRow + Math.floor(Math.random() * (STAGE_HEIGHT - minRow));
+			const col = Math.floor(Math.random() * STAGE_WIDTH);
+
+			// Only place if cell is empty and not already a bomb
+			if (newMap[row][col].fill === 0 && !newMap[row][col].isBomb) {
+				newMap[row][col] = { fill: 1, color: BOMB_COLOR, isBomb: true };
+				placed = true;
+			}
+			attempts++;
+		}
+	}
+
+	return newMap;
+};
 
 const colors = [
 	"#e54b4b",
@@ -127,11 +155,23 @@ const Game = () => {
 		console.log("Current level: ", level);
 		console.log("Score to next level:", nextLevelScore);
 		console.log("Remaining: ", nextLevelScore - score);
-		if (score >= nextLevelScore) setLevel(level + 1);
+		if (score >= nextLevelScore) {
+			setLevel(level + 1);
+			// Add more bombs on level up
+			setMap(prevMap => generateBombs(prevMap, 3));
+		}
 	}, [level, score]);
 
+	// Initialize bombs on game start
+	useEffect(() => {
+		if (!gameOver && level === 1 && score === 0 && lines === 0) {
+			setMap(prevMap => generateBombs(prevMap, 5));
+		}
+	}, [gameOver, level, score, lines]);
+
 	const restartGame = () => {
-		setMap(initialMap); //TODO: lose game
+		const newMap = generateBombs(initialMap, 5);
+		setMap(newMap);
 		setlines(0);
 		setScore(0);
 		setLevel(1);
@@ -142,6 +182,22 @@ const Game = () => {
 		setGameOver(true);
 	};
 
+	// Check if player piece is touching any bomb
+	const checkBombCollision = React.useCallback((player, map) => {
+		for (let y = 0; y < player.bloco.bloco.length; y++) {
+			for (let x = 0; x < player.bloco.bloco[y].length; x++) {
+				if (player.bloco.bloco[y][x] === 1) {
+					const mapY = player.pos[0] + y;
+					const mapX = player.pos[1] + x;
+					if (map[mapY] && map[mapY][mapX] && map[mapY][mapX].isBomb) {
+						return true; // Player hit a bomb!
+					}
+				}
+			}
+		}
+		return false;
+	}, []);
+
 	const drop = () => {
 		if (!player) {
 			setPlayer(getRandomPlayer());
@@ -150,6 +206,11 @@ const Game = () => {
 		setPlayer(player => {
 			const newPos = getNewPlayerPos("down");
 			if (player.pos === newPos) {
+				// Check if player hit a bomb before locking the piece
+				if (checkBombCollision(player, map)) {
+					loseGame();
+					return player;
+				}
 				setMap(map => {
 					const mapWithPlayer = PrintPlayerInMap(player, map);
 					const mapCleared = checkMap(mapWithPlayer);
@@ -191,6 +252,11 @@ const Game = () => {
 		setPlayer(player => {
 			const playerCopy = JSON.parse(JSON.stringify(player));
 			playerCopy.pos = [...hintPlayer.pos];
+			// Check if player hit a bomb before locking the piece
+			if (checkBombCollision(playerCopy, map)) {
+				loseGame();
+				return player;
+			}
 			setMap(map => {
 				const mapWithPlayer = PrintPlayerInMap(playerCopy, map);
 				const mapCleared = checkMap(mapWithPlayer);
@@ -249,7 +315,8 @@ const Game = () => {
 							else
 								newMap[mapY] = [...new Array(STAGE_WIDTH)].map(() => ({
 									fill: 0,
-									color: []
+									color: [],
+									isBomb: false
 								}));
 				});
 				setlines(quant => quant + rowsClear.length);

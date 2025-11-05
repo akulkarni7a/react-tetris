@@ -116,6 +116,24 @@ const Pixel = React.memo(styled.div`
 		border: 1px solid ${Color(props.playerColor).alpha(0.5)};
 		background-color: rgba(255,255,255,0.1);
 	`};
+
+	${props =>
+		props.isBomb &&
+		`
+		background: linear-gradient(135deg, #ff4500 0%, #ff6347 50%, #ff4500 100%);
+		border: 2px solid #8B0000;
+		box-shadow: 0 0 10px rgba(255, 69, 0, 0.8), inset 0 0 5px rgba(0, 0, 0, 0.5);
+		position: relative;
+
+		&::before {
+			content: '💣';
+			position: absolute;
+			top: 50%;
+			left: 50%;
+			transform: translate(-50%, -50%);
+			font-size: ${props.pixelSize * 0.6}px;
+		}
+	`};
 `);
 
 const ContainerSwitch = styled.div`
@@ -294,6 +312,7 @@ const Stage = ({ lose, restartClick, map, player, hint, status, paused, ...other
 											playerColor={player.bloco.color}
 											topBloco={topBloco}
 											zIndex={zIndex}
+											isBomb={pixel.isBomb}
 										></Pixel>
 									);
 								})}
