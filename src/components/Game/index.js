@@ -118,6 +118,7 @@ const Game = () => {
 	const [dragX, setDragX] = useState(0);
 	const [dragY, setDragY] = useState(0);
 	const [gameOver, setGameOver] = useState(false);
+	const [piecesDropped, setPiecesDropped] = useState(0);
 
 	useEffect(() => {
 		const levelBaseScore = 1000;
@@ -130,17 +131,55 @@ const Game = () => {
 		if (score >= nextLevelScore) setLevel(level + 1);
 	}, [level, score]);
 
+	useEffect(() => {
+		// Place a bomb when piecesDropped is a multiple of bomb frequency
+		if (piecesDropped > 0) {
+			const bombFrequency = Math.max(3, 8 - level);
+			if (piecesDropped % bombFrequency === 0) {
+				setMap(currentMap => placeBomb(currentMap));
+			}
+		}
+	}, [piecesDropped, level, placeBomb]);
+
 	const restartGame = () => {
 		setMap(initialMap); //TODO: lose game
 		setlines(0);
 		setScore(0);
 		setLevel(1);
 		setGameOver(false);
+		setPiecesDropped(0);
 	}
 
 	const loseGame = () => {
 		setGameOver(true);
 	};
+
+	const placeBomb = React.useCallback((currentMap) => {
+		// Find all empty cells in the lower half of the board
+		const emptyCells = [];
+		const startRow = Math.floor(STAGE_HEIGHT / 2); // Only place bombs in lower half
+
+		for (let y = startRow; y < STAGE_HEIGHT; y++) {
+			for (let x = 0; x < STAGE_WIDTH; x++) {
+				if (currentMap[y][x].fill === 0) {
+					emptyCells.push({ y, x });
+				}
+			}
+		}
+
+		// If there are empty cells, place a bomb randomly
+		if (emptyCells.length > 0) {
+			const randomCell = emptyCells[Math.floor(Math.random() * emptyCells.length)];
+			const newMap = currentMap.map(arr => arr.slice());
+			newMap[randomCell.y][randomCell.x] = {
+				fill: 1,
+				color: '#FF0000',
+				bomb: true
+			};
+			return newMap;
+		}
+		return currentMap;
+	}, []);
 
 	const drop = () => {
 		if (!player) {
@@ -153,6 +192,17 @@ const Game = () => {
 				setMap(map => {
 					const mapWithPlayer = PrintPlayerInMap(player, map);
 					const mapCleared = checkMap(mapWithPlayer);
+
+					// Place a bomb every 5 pieces (adjustable based on level)
+					setPiecesDropped(count => {
+						const newCount = count + 1;
+						const bombFrequency = Math.max(3, 8 - level); // More frequent at higher levels
+						if (newCount % bombFrequency === 0) {
+							return newCount;
+						}
+						return newCount;
+					});
+
 					return mapCleared;
 				});
 				const newPlayer = getRandomPlayer(player);
@@ -275,9 +325,18 @@ const Game = () => {
 							mapX < 0 ||
 							mapX > STAGE_WIDTH ||
 							!map[mapY] ||
-							!map[mapY][mapX] ||
-							map[mapY][mapX].fill === 1
+							!map[mapY][mapX]
 						)
+							return false;
+
+						// Check if piece hits a bomb - instant game over
+						if (map[mapY][mapX].bomb) {
+							loseGame();
+							return false;
+						}
+
+						// Check normal collision
+						if (map[mapY][mapX].fill === 1)
 							return false;
 					}
 			return true;

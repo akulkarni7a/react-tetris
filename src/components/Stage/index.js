@@ -96,7 +96,7 @@ const Pixel = React.memo(styled.div`
 			props.topBloco
 				? `, 0 ${-props.pixelSize / 4.16}px 0 ${Color(props.color).lighten(0.2)}`
 				: ""
-		} 
+		}
 	`};
 
 	${props =>
@@ -107,7 +107,7 @@ const Pixel = React.memo(styled.div`
 		};
 		border-top: 1px solid ${
 			props.stage || props.fill || props.hint ? "#222" : "black"
-		};	
+		};
 	`};
 
 	${props =>
@@ -115,6 +115,19 @@ const Pixel = React.memo(styled.div`
 		`
 		border: 1px solid ${Color(props.playerColor).alpha(0.5)};
 		background-color: rgba(255,255,255,0.1);
+	`};
+
+	${props =>
+		props.bomb &&
+		`
+		background-color: #FF0000 !important;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		font-size: ${props.pixelSize * 0.6}px;
+		&::after {
+			content: '💣';
+		}
 	`};
 `);
 
@@ -294,6 +307,7 @@ const Stage = ({ lose, restartClick, map, player, hint, status, paused, ...other
 											playerColor={player.bloco.color}
 											topBloco={topBloco}
 											zIndex={zIndex}
+											bomb={pixel.bomb}
 										></Pixel>
 									);
 								})}
